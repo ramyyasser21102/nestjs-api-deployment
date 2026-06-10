@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: app-backend
+
+    ports:
+      - '3000:3000'
+
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: '/data/app.db'
+      CHOKIDAR_USEPOLLING: 'true'
+
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - sqlite-data:/data
+
+    restart: unless-stopped
+
+volumes:
+  node_modules:
+  sqlite-data:
