@@ -1,4 +1,5 @@
 {
+  "CLAUDE_CODE_NEW_INIT": 1,
   "hooks": {
     "PostToolUse": [
       {
@@ -8,6 +9,25 @@
             "type": "command",
             "command": "jq -r '.tool_input.file_path' | { read -r f; [[ \"$f\" == *.ts ]] && pnpm exec prettier --write \"$f\"; } 2>/dev/null || true",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ponytail-review-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ponytail-debt-session-start.sh"
           }
         ]
       }
