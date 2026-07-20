@@ -1,3 +1,4 @@
+import { type IncomingMessage } from 'http';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -23,7 +24,7 @@ import { UserModule } from './user/user.module';
             : undefined,
         redact: ['req.headers.authorization', 'req.body.password'],
         serializers: {
-          req(req) {
+          req(req: IncomingMessage & { id: string | number }) {
             return { id: req.id, method: req.method, url: req.url };
           },
         },
