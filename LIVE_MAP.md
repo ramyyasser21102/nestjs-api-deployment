@@ -36,6 +36,14 @@ Bootstrapped 2026-08-01 from read-only repo inspection (RES-13ea0ea7). Entries r
 - **Imported by:** unconfirmed — not seen imported in app.module.ts
 - **Last modified:** unknown (pre-session)
 
+### .tmuxinator.yml
+
+- **Status:** stable
+- **Feature:** Local tmuxinator project config for dev session "nestjs-api" — main-vertical layout (LHS: claude, RHS split top/bottom: idle shells in repo root), session status bar colored #E92747 via `pre_window` hook (fires post-session-creation, per pane). Default tmuxinator start behavior attaches to the session if it already exists.
+- **Imports from:** none (tmuxinator/tmux CLI config)
+- **Imported by:** none (invoked via `tmuxinator start` / `tmuxinator local`)
+- **Last modified:** 2026-08-08 (RES-8b3f1a92) — replaced deprecated `post:` hook (tmuxinator 3.4.1) with `pre_window:`; `post` fired only after session detach (non-functional for its intent), `on_project_start` fires before session creation (target wouldn't exist yet), `pre_window` is the earliest hook that runs against an existing session.
+
 ### src/health/health.controller.ts, health.service.ts, health.module.ts
 
 - **Status:** stable
