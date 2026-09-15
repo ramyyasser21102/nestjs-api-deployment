@@ -36,7 +36,7 @@ export class UserController {
     return await this.userService.findOne(id);
   }
 
-  @Get('/:email')
+  @Get('/by-email/:email')
   @ApiOperation({ summary: 'Get a user by email' })
   @ApiParam({ name: 'email', type: String })
   @ApiResponseCommon()

@@ -171,6 +171,25 @@ describe('E2E', () => {
       });
     });
 
+    // ── GET /user/by-email/:email ────────────────────────────────────────────
+
+    describe('GET /user/by-email/:email', () => {
+      it('returns 200 with the user when found', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/user/by-email/alice@example.com')
+          .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { email: string }).email).toBe('alice@example.com');
+      });
+
+      it('returns 404 when user does not exist', () => {
+        return request(app.getHttpServer())
+          .get('/user/by-email/nobody@example.com')
+          .expect(404);
+      });
+    });
+
     // ── PUT /user/:id ────────────────────────────────────────────────────────
 
     describe('PUT /user/:id', () => {
