@@ -5,7 +5,12 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DB_ENTITIES, DB_TYPE, DEFAULT_DATABASE_URL } from './db/db.config';
+import {
+  DB_ENTITIES,
+  DB_TYPE,
+  DEFAULT_DATABASE_URL,
+  getDatabaseSsl,
+} from './db/db.config';
 import { HealthModule } from './health/health.module';
 import { UserModule } from './user/user.module';
 
@@ -33,8 +38,8 @@ import { UserModule } from './user/user.module';
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => ({
         type: DB_TYPE,
-        database:
-          configService.get<string>('DATABASE_URL') ?? DEFAULT_DATABASE_URL,
+        url: configService.get<string>('DATABASE_URL') ?? DEFAULT_DATABASE_URL,
+        ssl: getDatabaseSsl(configService.get<string>('NODE_ENV')),
         entities: DB_ENTITIES,
         synchronize: configService.get('NODE_ENV') !== 'production',
       }),

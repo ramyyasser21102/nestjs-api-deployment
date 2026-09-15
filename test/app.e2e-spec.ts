@@ -8,8 +8,11 @@ describe('E2E', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
-    // Use an isolated in-memory database so E2E tests never touch the real DB
-    process.env.DATABASE_URL = ':memory:';
+    // A dedicated `app_test` database on the same Postgres instance as
+    // dev — isolated from dev data, never touches production. Created by
+    // jest-e2e-global-setup.js if it doesn't already exist.
+    process.env.DATABASE_URL =
+      'postgresql://postgres:postgres@localhost:5433/app_test';
     process.env.NODE_ENV = 'test';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
