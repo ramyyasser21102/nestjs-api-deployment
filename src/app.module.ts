@@ -10,6 +10,7 @@ import {
   DB_TYPE,
   DEFAULT_DATABASE_URL,
   getDatabaseSsl,
+  shouldSynchronize,
 } from './db/db.config';
 import { HealthModule } from './health/health.module';
 import { UserModule } from './user/user.module';
@@ -41,7 +42,7 @@ import { UserModule } from './user/user.module';
         url: configService.get<string>('DATABASE_URL') ?? DEFAULT_DATABASE_URL,
         ssl: getDatabaseSsl(configService.get<string>('NODE_ENV')),
         entities: DB_ENTITIES,
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: shouldSynchronize(configService.get<string>('NODE_ENV')),
       }),
       inject: [ConfigService],
     }),

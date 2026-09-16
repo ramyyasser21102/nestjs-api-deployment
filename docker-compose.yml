@@ -34,10 +34,7 @@ services:
       POSTGRES_DB: app_dev
 
     ports:
-      # Host port 5433, not 5432 — this machine may already have another
-      # Postgres bound to 5432. Container-to-container traffic (the
-      # backend service talking to `postgres:5432`) is unaffected.
-      - '5433:5432'
+      - '5432:5432'
 
     volumes:
       - postgres-data:/var/lib/postgresql/data

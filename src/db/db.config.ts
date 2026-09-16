@@ -6,11 +6,12 @@ import { User } from '../user/user.entity';
 
 export const DB_ENTITIES = [User];
 
-// Matches the docker-compose `postgres` service exposed on localhost:5433
-// (5433, not the Postgres default 5432, to avoid clashing with any other
-// local Postgres already bound to 5432 on the host).
+// Matches the docker-compose `postgres` service on the default Postgres
+// port. If your machine already has something bound to 5432, remap it
+// locally in a (gitignored) docker-compose.override.yml rather than
+// changing this shared default.
 export const DEFAULT_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5433/app_dev';
+  'postgresql://postgres:postgres@localhost:5432/app_dev';
 
 export const DB_TYPE = 'postgres' as const;
 
@@ -19,6 +20,13 @@ export const DB_TYPE = 'postgres' as const;
 // validate against, so SSL only turns on for NODE_ENV=production.
 export function getDatabaseSsl(
   nodeEnv: string | undefined,
-): false | { rejectUnauthorized: boolean } {
+): false | { rejectUnauthorized: false } {
   return nodeEnv === 'production' ? { rejectUnauthorized: false } : false;
+}
+
+// Only auto-sync the schema for local, unconfigured development — test
+// and production both rely on real migrations, so the e2e suite actually
+// exercises the same migration path production does.
+export function shouldSynchronize(nodeEnv: string | undefined): boolean {
+  return nodeEnv === undefined || nodeEnv === 'development';
 }

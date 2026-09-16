@@ -9,10 +9,10 @@ describe('E2E', () => {
 
   beforeAll(async () => {
     // A dedicated `app_test` database on the same Postgres instance as
-    // dev — isolated from dev data, never touches production. Created by
-    // jest-e2e-global-setup.js if it doesn't already exist.
+    // dev — isolated from dev data, never touches production. Created
+    // and migrated by jest-e2e-global-setup.js before this suite runs.
     process.env.DATABASE_URL =
-      'postgresql://postgres:postgres@localhost:5433/app_test';
+      'postgresql://postgres:postgres@localhost:5432/app_test';
     process.env.NODE_ENV = 'test';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
