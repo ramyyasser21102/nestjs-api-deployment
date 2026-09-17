@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 
@@ -34,13 +35,13 @@ describe('HealthController', () => {
       expect(result).toEqual({ status: 'healthy' });
     });
 
-    it('returns { status: "unhealthy" } when the service reports unhealthy', async () => {
+    it('throws a 503 ServiceUnavailableException when the service reports unhealthy', async () => {
       mockHealthService.isHealthy.mockResolvedValue(false);
 
-      const result = await controller.healthCheck();
+      const result = controller.healthCheck();
 
-      expect(mockHealthService.isHealthy).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({ status: 'unhealthy' });
+      await expect(result).rejects.toThrow(ServiceUnavailableException);
+      await expect(result).rejects.toMatchObject({ status: 503 });
     });
   });
 });
