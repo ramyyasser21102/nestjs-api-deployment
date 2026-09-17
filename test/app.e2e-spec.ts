@@ -196,11 +196,18 @@ describe('E2E', () => {
     // ── PUT /user/:id ────────────────────────────────────────────────────────
 
     describe('PUT /user/:id', () => {
-      it('returns 200 and updates the user', () => {
-        return request(app.getHttpServer())
+      it('returns 200 with the updated user, without a password field', async () => {
+        const res = await request(app.getHttpServer())
           .put(`/user/${createdUserId}`)
           .send({ name: 'Alice Updated', email: 'alice.updated@example.com' })
           .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { name: string }).name).toBe('Alice Updated');
+        expect((res.body as { email: string }).email).toBe(
+          'alice.updated@example.com',
+        );
+        expect((res.body as { password: string }).password).toBeUndefined();
       });
 
       it('returns 404 when user does not exist', () => {

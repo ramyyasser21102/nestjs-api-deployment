@@ -12,6 +12,21 @@ const mockUserService = {
   delete: jest.fn(),
 };
 
+const createdAt = new Date('2026-01-01T00:00:00.000Z');
+const updatedAt = new Date('2026-01-02T00:00:00.000Z');
+
+// Entities as the repository would actually return them — including the
+// password, so these tests prove the controller strips it via the
+// mapper, not that the fixture happens to omit it.
+const alice = {
+  id: 1,
+  name: 'Alice',
+  email: 'alice@example.com',
+  password: 'a-bcrypt-hash',
+  createdAt,
+  updatedAt,
+};
+
 describe('UserController', () => {
   let controller: UserController;
 
@@ -31,17 +46,24 @@ describe('UserController', () => {
   });
 
   describe('findAll', () => {
-    it('returns the full user list from the service', async () => {
-      const users = [
-        { id: 1, name: 'Alice', email: 'alice@example.com' },
-        { id: 2, name: 'Bob', email: 'bob@example.com' },
-      ];
-      mockUserService.findAll.mockResolvedValue(users);
+    it('returns the full user list mapped to DTOs, without passwords', async () => {
+      const bob = { ...alice, id: 2, name: 'Bob', email: 'bob@example.com' };
+      mockUserService.findAll.mockResolvedValue([alice, bob]);
 
       const result = await controller.findAll();
 
       expect(mockUserService.findAll).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(users);
+      expect(result).toEqual([
+        {
+          id: 1,
+          name: 'Alice',
+          email: 'alice@example.com',
+          createdAt,
+          updatedAt,
+        },
+        { id: 2, name: 'Bob', email: 'bob@example.com', createdAt, updatedAt },
+      ]);
+      expect(result.some((u) => 'password' in u)).toBe(false);
     });
 
     it('returns an empty array when no users exist', async () => {
@@ -55,15 +77,21 @@ describe('UserController', () => {
   });
 
   describe('findOne', () => {
-    it('calls the service with the correct id and returns the result', async () => {
-      const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
-      mockUserService.findOne.mockResolvedValue(user);
+    it('calls the service with the correct id and returns the mapped user, without the password', async () => {
+      mockUserService.findOne.mockResolvedValue(alice);
 
       const result = await controller.findOne(1);
 
       expect(mockUserService.findOne).toHaveBeenCalledWith(1);
       expect(mockUserService.findOne).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(user);
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice',
+        email: 'alice@example.com',
+        createdAt,
+        updatedAt,
+      });
+      expect(result).not.toHaveProperty('password');
     });
 
     it('propagates NotFoundException when the service throws', async () => {
@@ -77,9 +105,8 @@ describe('UserController', () => {
   });
 
   describe('findOneByEmail', () => {
-    it('calls the service with the correct email and returns the result', async () => {
-      const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
-      mockUserService.findOneByEmail.mockResolvedValue(user);
+    it('calls the service with the correct email and returns the mapped user, without the password', async () => {
+      mockUserService.findOneByEmail.mockResolvedValue(alice);
 
       const result = await controller.findOneByEmail('alice@example.com');
 
@@ -87,7 +114,14 @@ describe('UserController', () => {
         'alice@example.com',
       );
       expect(mockUserService.findOneByEmail).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(user);
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice',
+        email: 'alice@example.com',
+        createdAt,
+        updatedAt,
+      });
+      expect(result).not.toHaveProperty('password');
     });
 
     it('propagates NotFoundException when the service throws', async () => {
@@ -105,19 +139,25 @@ describe('UserController', () => {
   });
 
   describe('create', () => {
-    it('calls the service with the correct dto and returns the created user', async () => {
+    it('calls the service with the correct dto and returns the mapped user, without the password', async () => {
       const dto = {
         name: 'Alice',
         email: 'alice@example.com',
         password: 'Password123!',
       };
-      const created = { id: 1, name: dto.name, email: dto.email };
-      mockUserService.create.mockResolvedValue(created);
+      mockUserService.create.mockResolvedValue(alice);
 
       const result = await controller.create(dto);
 
       expect(mockUserService.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(created);
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice',
+        email: 'alice@example.com',
+        createdAt,
+        updatedAt,
+      });
+      expect(result).not.toHaveProperty('password');
     });
 
     it('propagates BadRequestException when email already exists', async () => {
@@ -138,16 +178,27 @@ describe('UserController', () => {
   });
 
   describe('update', () => {
-    it('calls the service with the correct id and dto', async () => {
+    it('calls the service with the correct id and dto, and returns the mapped updated user', async () => {
       const dto = { name: 'Alice Updated', email: 'alice.new@example.com' };
-      const updateResult = { affected: 1, raw: [], generatedMaps: [] };
-      mockUserService.update.mockResolvedValue(updateResult);
+      const updated = {
+        ...alice,
+        name: 'Alice Updated',
+        email: 'alice.new@example.com',
+      };
+      mockUserService.update.mockResolvedValue(updated);
 
       const result = await controller.update(1, dto);
 
       expect(mockUserService.update).toHaveBeenCalledWith(1, dto);
       expect(mockUserService.update).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(updateResult);
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice Updated',
+        email: 'alice.new@example.com',
+        createdAt,
+        updatedAt,
+      });
+      expect(result).not.toHaveProperty('password');
     });
 
     it('propagates NotFoundException when user does not exist', async () => {
