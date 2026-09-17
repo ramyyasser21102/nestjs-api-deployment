@@ -221,10 +221,13 @@ describe('E2E', () => {
     // ── DELETE /user/:id ─────────────────────────────────────────────────────
 
     describe('DELETE /user/:id', () => {
-      it('returns 200 and deletes the user', () => {
-        return request(app.getHttpServer())
+      it('returns 200 with the deleted user, without a password field', async () => {
+        const res = await request(app.getHttpServer())
           .delete(`/user/${createdUserId}`)
           .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { password: string }).password).toBeUndefined();
       });
 
       it('returns 404 on subsequent GET after deletion', () => {

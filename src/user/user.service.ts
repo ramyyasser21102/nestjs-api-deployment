@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { DeleteResult, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
 import { IUser, User } from './user.entity';
 
@@ -84,14 +84,14 @@ export class UserService {
     return updated;
   }
 
-  async delete(id: number): Promise<DeleteResult> {
+  async delete(id: number): Promise<IUser> {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {
       this.logger.warn({ id }, 'User not found on delete');
       throw new NotFoundException(`User with id ${id} not found`);
     }
-    const result = await this.userRepository.delete({ id });
+    await this.userRepository.delete({ id });
     this.logger.info({ id }, 'User deleted');
-    return result;
+    return user;
   }
 }

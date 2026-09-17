@@ -215,15 +215,21 @@ describe('UserController', () => {
   });
 
   describe('delete', () => {
-    it('calls the service with the correct id and returns the result', async () => {
-      const deleteResult = { affected: 1, raw: [] };
-      mockUserService.delete.mockResolvedValue(deleteResult);
+    it('calls the service with the correct id and returns the mapped deleted user, without the password', async () => {
+      mockUserService.delete.mockResolvedValue(alice);
 
       const result = await controller.delete(1);
 
       expect(mockUserService.delete).toHaveBeenCalledWith(1);
       expect(mockUserService.delete).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(deleteResult);
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice',
+        email: 'alice@example.com',
+        createdAt,
+        updatedAt,
+      });
+      expect(result).not.toHaveProperty('password');
     });
 
     it('propagates NotFoundException when user does not exist', async () => {

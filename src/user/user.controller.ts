@@ -73,9 +73,9 @@ export class UserController {
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponseCommon()
-  @ApiResponse({ status: 200, description: 'User deleted' })
+  @ApiResponse({ status: 200, type: UserDto, description: 'User deleted' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async delete(@Param('id', ParseIntPipe) id: number) {
-    return await this.userService.delete(id);
+    return toUserDto(await this.userService.delete(id));
   }
 }

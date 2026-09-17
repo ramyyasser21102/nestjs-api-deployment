@@ -214,17 +214,16 @@ describe('UserService', () => {
   // ─── delete ──────────────────────────────────────────────────────────────────
 
   describe('delete', () => {
-    it('calls repository.delete with correct id when user exists', async () => {
+    it('deletes the user and returns the deleted user', async () => {
       const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
-      const deleteResult = { affected: 1, raw: [] };
       mockRepository.findOneBy.mockResolvedValue(user);
-      mockRepository.delete.mockResolvedValue(deleteResult);
+      mockRepository.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       const result = await service.delete(1);
 
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
       expect(mockRepository.delete).toHaveBeenCalledWith({ id: 1 });
-      expect(result).toEqual(deleteResult);
+      expect(result).toEqual(user);
     });
 
     it('throws NotFoundException and does not call delete when user does not exist', async () => {
