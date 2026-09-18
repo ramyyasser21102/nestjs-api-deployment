@@ -8,8 +8,11 @@ describe('E2E', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
-    // Use an isolated in-memory database so E2E tests never touch the real DB
-    process.env.DATABASE_URL = ':memory:';
+    // A dedicated `app_test` database on the same Postgres instance as
+    // dev — isolated from dev data, never touches production. Created
+    // and migrated by jest-e2e-global-setup.js before this suite runs.
+    process.env.DATABASE_URL =
+      'postgresql://postgres:postgres@localhost:5432/app_test';
     process.env.NODE_ENV = 'test';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -171,14 +174,40 @@ describe('E2E', () => {
       });
     });
 
+    // ── GET /user/by-email/:email ────────────────────────────────────────────
+
+    describe('GET /user/by-email/:email', () => {
+      it('returns 200 with the user when found', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/user/by-email/alice@example.com')
+          .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { email: string }).email).toBe('alice@example.com');
+      });
+
+      it('returns 404 when user does not exist', () => {
+        return request(app.getHttpServer())
+          .get('/user/by-email/nobody@example.com')
+          .expect(404);
+      });
+    });
+
     // ── PUT /user/:id ────────────────────────────────────────────────────────
 
     describe('PUT /user/:id', () => {
-      it('returns 200 and updates the user', () => {
-        return request(app.getHttpServer())
+      it('returns 200 with the updated user, without a password field', async () => {
+        const res = await request(app.getHttpServer())
           .put(`/user/${createdUserId}`)
           .send({ name: 'Alice Updated', email: 'alice.updated@example.com' })
           .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { name: string }).name).toBe('Alice Updated');
+        expect((res.body as { email: string }).email).toBe(
+          'alice.updated@example.com',
+        );
+        expect((res.body as { password: string }).password).toBeUndefined();
       });
 
       it('returns 404 when user does not exist', () => {
@@ -192,10 +221,13 @@ describe('E2E', () => {
     // ── DELETE /user/:id ─────────────────────────────────────────────────────
 
     describe('DELETE /user/:id', () => {
-      it('returns 200 and deletes the user', () => {
-        return request(app.getHttpServer())
+      it('returns 200 with the deleted user, without a password field', async () => {
+        const res = await request(app.getHttpServer())
           .delete(`/user/${createdUserId}`)
           .expect(200);
+
+        expect((res.body as { id: number }).id).toBe(createdUserId);
+        expect((res.body as { password: string }).password).toBeUndefined();
       });
 
       it('returns 404 on subsequent GET after deletion', () => {

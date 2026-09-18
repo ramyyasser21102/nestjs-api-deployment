@@ -177,11 +177,10 @@ describe('UserService', () => {
   // ─── update ──────────────────────────────────────────────────────────────────
 
   describe('update', () => {
-    it('calls repository.update with correct args when user exists', async () => {
+    it('saves the updated fields and returns the updated user', async () => {
       const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
-      const updateResult = { affected: 1, raw: [], generatedMaps: [] };
       mockRepository.findOneBy.mockResolvedValue(user);
-      mockRepository.update.mockResolvedValue(updateResult);
+      mockRepository.save.mockImplementation((u) => Promise.resolve(u));
 
       const result = await service.update(1, {
         name: 'Alice Updated',
@@ -189,38 +188,42 @@ describe('UserService', () => {
       });
 
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
-      expect(mockRepository.update).toHaveBeenCalledWith(
-        { id: 1 },
-        { name: 'Alice Updated', email: 'alice@example.com' },
-      );
-      expect(result).toEqual(updateResult);
+      expect(mockRepository.save).toHaveBeenCalledWith({
+        id: 1,
+        name: 'Alice Updated',
+        email: 'alice@example.com',
+      });
+      expect(result).toEqual({
+        id: 1,
+        name: 'Alice Updated',
+        email: 'alice@example.com',
+      });
     });
 
-    it('throws NotFoundException and does not call update when user does not exist', async () => {
+    it('throws NotFoundException and does not save when user does not exist', async () => {
       mockRepository.findOneBy.mockResolvedValue(null);
 
       await expect(
         service.update(999, { name: 'Ghost', email: 'ghost@example.com' }),
       ).rejects.toThrow(NotFoundException);
 
-      expect(mockRepository.update).not.toHaveBeenCalled();
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
   });
 
   // ─── delete ──────────────────────────────────────────────────────────────────
 
   describe('delete', () => {
-    it('calls repository.delete with correct id when user exists', async () => {
+    it('deletes the user and returns the deleted user', async () => {
       const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
-      const deleteResult = { affected: 1, raw: [] };
       mockRepository.findOneBy.mockResolvedValue(user);
-      mockRepository.delete.mockResolvedValue(deleteResult);
+      mockRepository.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       const result = await service.delete(1);
 
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
       expect(mockRepository.delete).toHaveBeenCalledWith({ id: 1 });
-      expect(result).toEqual(deleteResult);
+      expect(result).toEqual(user);
     });
 
     it('throws NotFoundException and does not call delete when user does not exist', async () => {

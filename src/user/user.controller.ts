@@ -11,6 +11,7 @@ import {
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiResponseCommon } from '../common/decorators';
 import { CreateUserDto, UpdateUserDto, UserDto } from './user.dto';
+import { toUserDto } from './user.mapper';
 import { UserService } from './user.service';
 
 @ApiTags('users')
@@ -23,7 +24,8 @@ export class UserController {
   @ApiResponseCommon()
   @ApiResponse({ status: 200, type: [UserDto] })
   async findAll() {
-    return this.userService.findAll();
+    const users = await this.userService.findAll();
+    return users.map(toUserDto);
   }
 
   @Get('/:id')
@@ -33,17 +35,17 @@ export class UserController {
   @ApiResponse({ status: 200, type: UserDto })
   @ApiResponse({ status: 404, description: 'User not found' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return await this.userService.findOne(id);
+    return toUserDto(await this.userService.findOne(id));
   }
 
-  @Get('/:email')
+  @Get('/by-email/:email')
   @ApiOperation({ summary: 'Get a user by email' })
   @ApiParam({ name: 'email', type: String })
   @ApiResponseCommon()
   @ApiResponse({ status: 200, type: UserDto })
   @ApiResponse({ status: 404, description: 'User not found' })
   async findOneByEmail(@Param('email') email: string) {
-    return await this.userService.findOneByEmail(email);
+    return toUserDto(await this.userService.findOneByEmail(email));
   }
 
   @Post('/create')
@@ -51,7 +53,7 @@ export class UserController {
   @ApiResponseCommon()
   @ApiResponse({ status: 201, type: UserDto })
   async create(@Body() createUserDto: CreateUserDto) {
-    return await this.userService.create(createUserDto);
+    return toUserDto(await this.userService.create(createUserDto));
   }
 
   @Put('/:id')
@@ -64,16 +66,16 @@ export class UserController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return await this.userService.update(id, updateUserDto);
+    return toUserDto(await this.userService.update(id, updateUserDto));
   }
 
   @Delete('/:id')
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponseCommon()
-  @ApiResponse({ status: 200, description: 'User deleted' })
+  @ApiResponse({ status: 200, type: UserDto, description: 'User deleted' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async delete(@Param('id', ParseIntPipe) id: number) {
-    return await this.userService.delete(id);
+    return toUserDto(await this.userService.delete(id));
   }
 }

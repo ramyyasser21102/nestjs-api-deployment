@@ -5,8 +5,14 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import {
+  DB_ENTITIES,
+  DB_TYPE,
+  DEFAULT_DATABASE_URL,
+  getDatabaseSsl,
+  shouldSynchronize,
+} from './db/db.config';
 import { HealthModule } from './health/health.module';
-import { User } from './user/user.entity';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -32,10 +38,11 @@ import { UserModule } from './user/user.module';
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => ({
-        type: 'better-sqlite3',
-        database: configService.get<string>('DATABASE_URL') ?? './db.sqlite',
-        entities: [User],
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        type: DB_TYPE,
+        url: configService.get<string>('DATABASE_URL') ?? DEFAULT_DATABASE_URL,
+        ssl: getDatabaseSsl(configService.get<string>('NODE_ENV')),
+        entities: DB_ENTITIES,
+        synchronize: shouldSynchronize(configService.get<string>('NODE_ENV')),
       }),
       inject: [ConfigService],
     }),
