@@ -364,6 +364,27 @@ Step 3 can be scripted as a deploy script or triggered by a CI/CD pipeline (GitH
 
 During the `docker stop` + `docker run` window (a few seconds), the ALB health check will fail and the ALB will briefly show the target as unhealthy. For zero-downtime deploys, this requires running two containers on the same instance on different ports and switching the Nginx upstream — but that is beyond the scope of the current architecture.
 
+### Scripted Deployment
+
+The manual steps above (build, migrate, swap container) are now scripted in `scripts/`:
+
+| Script                     | Runs where              | Purpose                                                                                                                                     |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/check-deps.sh`    | On the EC2 instance     | Idempotent — installs Docker/git if missing, starts the Docker daemon if it isn't running.                                                  |
+| `scripts/deploy.sh`        | On the EC2 instance     | Calls `check-deps.sh`, builds the `prod` image, runs migrations in a throwaway container, swaps the running container, waits for `/health`. |
+| `scripts/deploy-remote.sh` | On your machine (or CI) | Looks up the instance's current public IP via the AWS CLI, SSHes in, `git reset --hard`s to `origin/main`, then runs the two scripts above. |
+
+Usage: `SSH_KEY=~/.ssh/ubuntu-aws-ssh-access.pem ./scripts/deploy-remote.sh`. Requires a `.env` file in the app directory on the instance (copy `.env.example` and fill in the real RDS credentials) — this is never committed.
+
+This instance's Nginx already reverse-proxies `:80` to the app's port from an earlier manual setup, so swapping the process from PM2 to a Docker container needs no Nginx changes as long as the container publishes to the same port.
+
+**Outstanding manual follow-ups** (deliberately not automated — each mutates shared AWS state, so they're run by hand, not by a script or by an agent with AWS credentials):
+
+- **Elastic IP**: not yet allocated. The instance's public IP/DNS currently change on stop/start or replacement. `deploy-remote.sh` looks the current IP up dynamically so it keeps working either way, but anything that bookmarks the IP directly (Swagger link, Postman) will break on every replacement until an EIP is attached.
+- **SSM Agent**: the instance's IAM role already grants `AmazonSSMManagedInstanceCore`, but `aws ssm describe-instance-information` currently returns nothing — the agent itself isn't installed/running. SSH remains the deploy transport until this is fixed.
+- **CloudWatch log shipping**: `deploy.sh` defaults to Docker's local `json-file` log driver. Since the instance's root volume is deleted on termination, those logs disappear with it. Add `logs:CreateLogStream` / `logs:PutLogEvents` to `ec2-api-server-role` and set `LOG_DRIVER=awslogs` to ship logs to CloudWatch instead.
+- **RDS security group**: currently allows all protocols/ports from the EC2 security group; only `tcp/5432` is actually needed.
+
 ---
 
 ## Comparison
