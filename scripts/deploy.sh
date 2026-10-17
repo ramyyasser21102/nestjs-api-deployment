@@ -5,13 +5,9 @@ set -euo pipefail
 APP_NAME="nestjs-api"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Deploy-time settings (LOG_DRIVER, AWS_REGION, LOG_GROUP, ...) live in a
-# gitignored .env.deploy on this box. Separate from $ENV_FILE below, which is
-# the app's runtime .env passed wholesale to the container.
 DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-$APP_DIR/.env.deploy}"
 if [ -f "$DEPLOY_ENV_FILE" ]; then
   set -a
-  # shellcheck disable=SC1090
   source "$DEPLOY_ENV_FILE"
   set +a
 fi
