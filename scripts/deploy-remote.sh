@@ -1,31 +1,29 @@
 #!/usr/bin/env bash
-# Run this FROM YOUR MACHINE (or CI) to trigger a deploy. It looks up the
-# instance's current public IP/DNS from AWS (so it keeps working whether
-# or not an Elastic IP is attached yet), then SSHes in and runs
-# check-deps.sh + deploy.sh on the box itself.
-#
-# Requires: AWS CLI configured locally (uses $AWS_PROFILE), and the SSH
-# private key for the ubuntu-aws-ssh-access key pair.
-#
-# Usage:
-#   SSH_KEY=~/.ssh/ubuntu-aws-ssh-access.pem ./scripts/deploy-remote.sh
+
 set -euo pipefail
 
-AWS_PROFILE="${AWS_PROFILE:-admin}"
-AWS_REGION="${AWS_REGION:-us-east-1}"
-INSTANCE_ID="${INSTANCE_ID:-i-0413235997c7e7e32}"
-SSH_USER="${SSH_USER:-ubuntu}"
-SSH_KEY="${SSH_KEY:?Set SSH_KEY to the path of your ubuntu-aws-ssh-access .pem file}"
-REMOTE_APP_DIR="${REMOTE_APP_DIR:-/home/ubuntu/app}"
-REPO_URL="${REPO_URL:-git@github.com:ramyyasser21102/nestjs-api-deployment.git}"
+ENV_FILE="${ENV_FILE:-$(dirname "$0")/../.env.deploy}"
+if [ -f "$ENV_FILE" ]; then
+  set -a 
+  source "$ENV_FILE"
+  set +a
+fi
+
+AWS_PROFILE="${AWS_PROFILE:?Set AWS_PROFILE in $ENV_FILE}"
+AWS_REGION="${AWS_REGION:?Set AWS_REGION in $ENV_FILE}"
+INSTANCE_ID="${INSTANCE_ID:?Set INSTANCE_ID in $ENV_FILE}"
+SSH_USER="${SSH_USER:?Set SSH_USER in $ENV_FILE}"
+SSH_KEY="${SSH_KEY:?Set SSH_KEY in $ENV_FILE}"
+REMOTE_APP_DIR="${REMOTE_APP_DIR:?Set REMOTE_APP_DIR in $ENV_FILE}"
+REPO_URL="${REPO_URL:?Set REPO_URL in $ENV_FILE}"
 
 echo "==> Looking up current public IP/DNS for $INSTANCE_ID"
-read -r PUBLIC_IP PUBLIC_DNS STATE <<<"$(
+read -r STATE PUBLIC_IP PUBLIC_DNS <<<"$(
   aws ec2 describe-instances \
     --profile "$AWS_PROFILE" \
     --region "$AWS_REGION" \
     --instance-ids "$INSTANCE_ID" \
-    --query "Reservations[0].Instances[0].[PublicIpAddress,PublicDnsName,State.Name]" \
+    --query "Reservations[0].Instances[0].[State.Name,PublicIpAddress,PublicDnsName]" \
     --output text
 )"
 
@@ -57,6 +55,5 @@ cd "\$REMOTE_APP_DIR"
 git fetch origin
 git reset --hard origin/main
 
-./scripts/check-deps.sh
 ./scripts/deploy.sh
 EOF

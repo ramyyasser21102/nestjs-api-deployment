@@ -20,6 +20,12 @@ if ! sudo systemctl is-active --quiet docker; then
   sudo systemctl enable --now docker
 fi
 
+if ! docker info >/dev/null 2>&1; then
+  echo "ERROR: current user can't talk to the Docker daemon (likely a fresh install — docker-group membership only applies to new sessions)." >&2
+  echo "Reconnect (new SSH session) and re-run the deploy." >&2
+  exit 1
+fi
+
 if ! docker compose version >/dev/null 2>&1; then
   echo "ERROR: Docker Compose plugin missing even after install." >&2
   exit 1

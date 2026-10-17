@@ -374,7 +374,9 @@ The manual steps above (build, migrate, swap container) are now scripted in `scr
 | `scripts/deploy.sh`        | On the EC2 instance     | Calls `check-deps.sh`, builds the `prod` image, runs migrations in a throwaway container, swaps the running container, waits for `/health`. |
 | `scripts/deploy-remote.sh` | On your machine (or CI) | Looks up the instance's current public IP via the AWS CLI, SSHes in, `git reset --hard`s to `origin/main`, then runs the two scripts above. |
 
-Usage: `SSH_KEY=~/.ssh/ubuntu-aws-ssh-access.pem ./scripts/deploy-remote.sh`. Requires a `.env` file in the app directory on the instance (copy `.env.example` and fill in the real RDS credentials) — this is never committed.
+Usage: `./scripts/deploy-remote.sh`. It reads its settings (`AWS_PROFILE`, `AWS_REGION`, `INSTANCE_ID`, `SSH_USER`, `SSH_KEY`, `REMOTE_APP_DIR`, `REPO_URL`) from a gitignored `.env.deploy` in the repo root on your machine — see `.env.deploy.example`. Nothing identifying (instance ID, key path, profile) is committed.
+
+On the instance, two more gitignored files live in the app directory: `.env` (copy `.env.example` and fill in the real RDS credentials; passed to the container) and, optionally, `.env.deploy` (deploy-time settings such as `LOG_DRIVER`, `AWS_REGION` and `LOG_GROUP` — the latter two are required only when `LOG_DRIVER=awslogs`). `deploy-remote.sh` does not forward your local `.env.deploy` to the instance.
 
 This instance's Nginx already reverse-proxies `:80` to the app's port from an earlier manual setup, so swapping the process from PM2 to a Docker container needs no Nginx changes as long as the container publishes to the same port.
 

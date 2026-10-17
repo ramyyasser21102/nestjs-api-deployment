@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
-# Runs ON the EC2 instance, from the repo root (or anywhere — it locates
-# the repo relative to this file). Assumes the repo checkout is already
-# up to date (the caller does git fetch/reset before invoking this).
-#
-# Builds the prod image, runs migrations in a throwaway container, swaps
-# the running container, and waits for /health before declaring success.
+
 set -euo pipefail
 
 APP_NAME="nestjs-api"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Deploy-time settings (LOG_DRIVER, AWS_REGION, LOG_GROUP, ...) live in a
+# gitignored .env.deploy on this box. Separate from $ENV_FILE below, which is
+# the app's runtime .env passed wholesale to the container.
+DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-$APP_DIR/.env.deploy}"
+if [ -f "$DEPLOY_ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$DEPLOY_ENV_FILE"
+  set +a
+fi
+
 ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
 PORT="${PORT:-3000}"
-
-# Logging: defaults to Docker's local json-file driver. Once you've added
-# the logs:CreateLogStream / logs:PutLogEvents permission to the
-# ec2-api-server-role (see docs/deployment.md), set LOG_DRIVER=awslogs
-# to ship container logs to CloudWatch instead — this matters because
-# the instance's root volume is deleted on termination, so json-file
-# logs die with the instance.
 LOG_DRIVER="${LOG_DRIVER:-json-file}"
-AWS_REGION="${AWS_REGION:-us-east-1}"
-LOG_GROUP="${LOG_GROUP:-/nestjs-api/app}"
 
 "$APP_DIR/scripts/check-deps.sh"
 
@@ -46,6 +44,8 @@ docker rm "$APP_NAME" >/dev/null 2>&1 || true
 echo "==> Starting $IMAGE (log driver: $LOG_DRIVER)"
 LOG_ARGS=()
 if [ "$LOG_DRIVER" = "awslogs" ]; then
+  AWS_REGION="${AWS_REGION:?Set AWS_REGION in $DEPLOY_ENV_FILE when LOG_DRIVER=awslogs}"
+  LOG_GROUP="${LOG_GROUP:?Set LOG_GROUP in $DEPLOY_ENV_FILE when LOG_DRIVER=awslogs}"
   LOG_ARGS=(
     --log-driver awslogs
     --log-opt awslogs-region="$AWS_REGION"
