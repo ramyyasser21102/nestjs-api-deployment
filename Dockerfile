@@ -19,7 +19,7 @@ FROM node:22-alpine AS prod
 RUN npm install -g pnpm@10
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 COPY --from=build /app/dist ./dist
 ENV NODE_ENV=production
 EXPOSE 3000
